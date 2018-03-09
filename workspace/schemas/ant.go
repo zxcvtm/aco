@@ -61,6 +61,20 @@ func (ant Ant) Move(garden Garden) (Ant){
 	ant = ant.moveToNextNode(selectedNode, garden.GetDistance(startNode, selectedNode))
 	return ant;
 }
+func (ant Ant) MoveAsync(garden Garden) (<- chan Ant){
+	c := make(chan Ant)
+	go func() {
+		var (
+			startNode    int = ant.visited[len(ant.visited)-1]
+			selectedNode int
+		)
+		selectedNode = ant.getNextNode(garden)
+		ant = ant.moveToNextNode(selectedNode, garden.GetDistance(startNode, selectedNode))
+		c <- ant;
+	}()
+	return c;
+}
+
 func (ant Ant) getNextNode(garden Garden) int {
 	seed:= int64(time.Now().Nanosecond())
 	source := rand.NewSource(seed)
@@ -105,7 +119,15 @@ func (ant Ant) AddPheromone(garden Garden) (Garden) {
 	return garden
 }
 
-func (ant Ant) GetRouteDistante() float64{
-	lastNode := ant.visited[len(ant.visited) -1 ]
+func (ant Ant) GetRouteDistante() float64 {
+	lenght := len(ant.visited) -1
+	if lenght < 0 {
+		lenght = 0
+	}
+	lastNode := ant.visited[lenght]
 	return ant.route[lastNode]
+}
+
+func (ant Ant) GetVisited() []int {
+	return ant.visited
 }

@@ -3,7 +3,6 @@ package schemas
 import (
 	"math/rand"
 	"time"
-	"github.com/kr/pretty"
 )
 
 type (
@@ -19,19 +18,15 @@ type (
 		Pheromone float64
 	}
 )
-func (garden Garden) InitGarden(graph [][]Edge, alpha, beta float64) Garden {
-	seed:= int64(time.Now().Nanosecond())
-	source := rand.NewSource(seed)
-	random := rand.New(source)
-
+func (garden Garden) InitGarden(graph [][]Edge, alpha, beta, pheromone, p float64) Garden {
 	garden.alpha = alpha
 	garden.beta = beta
-	garden.p = random.Float64()
+	garden.p = p
 	garden.graph = graph
 
 	for x, edges := range garden.graph {
 		for y, edge := range edges {
-			edge.Pheromone = 1.0
+			edge.Pheromone = pheromone
 			garden.graph[x][y] = edge
 		}
 	}
@@ -71,7 +66,14 @@ func (garden Garden) Iterate() Garden{
 		garden = garden.moveAnts()
 	}
 	garden = garden.antsAddPheromone()
-	pretty.Println(garden)
+	return garden
+}
+func (garden Garden) IterateAsync() Garden{
+	garden = garden.InitAntColony()
+	for i := 1; i < len(garden.graph); i++ {
+		garden = garden.moveAntsAsync()
+	}
+	garden = garden.antsAddPheromone()
 	return garden
 }
 func (garden Garden) moveAnts() (Garden){
@@ -82,6 +84,20 @@ func (garden Garden) moveAnts() (Garden){
 	garden.antColony = antColony
 	return  garden
 }
+func (garden Garden) moveAntsAsync() (Garden){
+	var channelArray []<-chan Ant
+	antColony := []Ant{}
+	for _,ant := range garden.antColony {
+		channelArray = append(channelArray,ant.MoveAsync(garden))
+	}
+	for _, channelResult := range channelArray {
+		response := <-channelResult
+		antColony = append(antColony, response)
+	}
+	garden.antColony = antColony
+	return  garden
+}
+
 func (garden Garden) antsAddPheromone() (Garden) {
 	for _,ant := range garden.antColony {
 		garden = ant.AddPheromone(garden)
@@ -89,13 +105,15 @@ func (garden Garden) antsAddPheromone() (Garden) {
 	return garden
 }
 
-func (garden Garden) GetBestRoute() float64{
+func (garden Garden) GetBestRoute() Ant{
 	var bestRoute float64
+	var bestAnt   Ant
 	bestRoute = garden.antColony[0].GetRouteDistante()
 	for _, ant := range garden.antColony {
 		if ant.GetRouteDistante() < bestRoute {
 			bestRoute = ant.GetRouteDistante()
+			bestAnt = ant
 		}
 	}
-	return bestRoute
+	return bestAnt
 }

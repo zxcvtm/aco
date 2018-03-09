@@ -35,3 +35,19 @@ func ReadGraph () [][]schemas.Edge {
 	}
 	return graph
 }
+
+func ArrayToEdges (graphArray [][]float64) [][]schemas.Edge {
+	var graph [][]schemas.Edge
+
+	for _, row := range graphArray {
+		var nodeEdges[]schemas.Edge
+		for _, dist := range row {
+			var edge schemas.Edge
+			edge.Distance = dist
+			nodeEdges = append(nodeEdges, edge)
+		}
+		graph = append(graph, nodeEdges)
+
+	}
+	return graph
+}

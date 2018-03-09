@@ -2,18 +2,39 @@ package main
 import (
 	// Standard
 	"fmt"
-	"aco/workspace/utils"
-	"aco/workspace/schemas"
+	"net/http"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	"github.com/urfave/negroni"
+	"aco/workspace/routes"
 )
 
 func main() {
-	fmt.Println("its wokrs")
-	fmt.Println("Lets start reading the graph file")
 
-	graph  := utils.ReadGraph()
-	garden := schemas.Garden{}
-	garden = garden.InitGarden(graph, 0.5, 0.5)
-	garden = garden.Iterate()
-	fmt.Println(garden.GetBestRoute())
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, string("Is up and running successfully!"))
+	})
 
+	n := negroni.Classic() // Includes some default middlewares
+
+	n.Use(cors.New(cors.Options{
+		AllowedOrigins   : []string{"*"},
+		AllowedMethods   : []string{"HEAD","GET","POST","PUT","DELETE","PATCH","OPTIONS"},
+		AllowedHeaders   : []string{"Origin","Authorization","X-Requested-With","Content-Type","Accept","Signature"},
+		ExposedHeaders   : []string{"Content-Length"},
+		AllowCredentials : true,
+	}))
+
+	n.UseHandler(r)
+
+	//Routes
+	apiRoutes(r)
+
+	//Run server
+	fmt.Println("Its works")
+	http.ListenAndServe( ":3000", n)
+}
+func apiRoutes(r *mux.Router) {
+	routes.ACOApi(r)
 }
